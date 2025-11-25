@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Forecast Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #fdf9f5;                  /* light coffee cream */
+            --primary: #4b2e05;             /* deep espresso */
+            --accent: #a37448;              /* medium roast */
+            --light-accent: #d6bfa7;        /* latte tone */
+            --radius: 16px;
+            --shadow: 5px 5px 0 var(--primary);
+            --transition: all 0.25s ease-in-out;
+        }
+
+        body {
+            font-family: 'Poppins', 'Inter', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 2rem;
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* ============ HEADER ============ */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--accent), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: #6b4a2b;
+            font-size: 1rem;
+            margin: 0.3rem 0;
+        }
+
+        .account-name, .service-name {
+            margin-top: 0.5rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .account-name span,
+        .service-name span {
+            color: var(--primary);
+        }
+
+        /* ============ CARDS ============ */
+        .card {
+            background: #fffdfa;
+            border: 3px solid var(--primary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 7px 7px 0 var(--accent);
+        }
+
+        /* ============ METRICS ============ */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric {
+            background: #fefaf6;
+            border: 3px solid var(--primary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.2rem;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .metric:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 7px 7px 0 var(--accent);
+        }
+
+        .metric h3 {
+            font-size: 0.95rem;
+            color: #6b4a2b;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric p {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        /* ============ PLOT SECTION ============ */
+        .plot {
+            border: 3px solid var(--primary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            background: #fffdfa;
+            padding: 1rem;
+        }
+
+        /* ============ BUTTONS ============ */
+        .button {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .button a {
+            display: inline-block;
+            background: var(--accent);
+            color: #fffdfa;
+            text-decoration: none;
+            padding: 0.9rem 2rem;
+            font-weight: 600;
+            border: 3px solid var(--primary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .button a:hover {
+            background: var(--primary);
+            color: #fffdfa;
+            box-shadow: 7px 7px 0 var(--accent);
+            transform: translate(-3px, -3px);
+        }
+
+        /* ============ FOOTER ============ */
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6b4a2b;
+        }
+
+        footer span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+    </style>
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💡 Forecast Dashboard</h1>
+            <p> Prophet-powered time series insights</p>
+        </div>
+
+        {% if forecast_type == "account" and account_name %}
+            <p class="account-name">📊 Forecast for Account: <span>{{ account_name }}</span></p>
+        {% endif %}
+
+        {% if forecast_type == "service" and account_name and service_name %}
+            <p class="account-name">📊 Forecast for Account: <span>{{ account_name }}</span></p>
+            <p class="service-name">📊 Forecast for Service: <span>{{ service_name }}</span></p>
+        {% endif %}
+
+        <!-- Metrics Grid -->
+        <div class="metrics">
+            {% if metrics %}
+                {% for key, value in metrics.items %}
+                    <div class="metric">
+                        <h3>{{ key|title }}</h3>
+                        <p>{{ value }}</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="text-align:center;">No metrics available</p>
+            {% endif %}
+        </div>
+
+        <!-- Chart.js Forecast Plot -->
+        <div class="card plot">
+            <canvas id="forecastChart" width="900" height="400"></canvas>
+        </div>
+
+        <!-- Back Button -->
+        <div class="button">
+            <a href="{% url 'upload_file' %}">⬅️ Upload Another Dataset</a>
+        </div>
+
+        <!-- Download CSV Button -->
+        <div class="button">
+            <a href="{% url 'download_csv' %}">⬇️ Download Forecast CSV</a>
+        </div>
+
+        <footer>
+            Built with <span>Django</span> · <span>Chart.js</span> · <span>Prophet</span>
+        </footer>
+    </div>
+
+    <!-- Chart.js Script -->
+    <script>
+        const forecastData = JSON.parse('{{ forecast_data|escapejs }}');
+        console.log("DEBUG forecastData:", forecastData);
+
+        const labels = forecastData.map(d => d.ds);
+        const yhat = forecastData.map(d => d.yhat);
+        const yhatLower = forecastData.map(d => d.yhat_lower);
+        const yhatUpper = forecastData.map(d => d.yhat_upper);
+
+        const ctx = document.getElementById('forecastChart').getContext('2d');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Forecast (yhat)',
+                        data: yhat,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2
+                    },
+                    {
+                        label: 'Lower Bound (yhat_lower)',
+                        data: yhatLower,
+                        borderColor: 'rgba(255, 99, 132, 0.6)',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Upper Bound (yhat_upper)',
+                        data: yhatUpper,
+                        borderColor: 'rgba(75, 192, 192, 0.6)',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Forecast with Confidence Intervals',
+                        font: { size: 18 }
+                    },
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        },
+                        ticks: {
+                            maxTicksLimit: 12,
+                            autoSkip: true
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Forecast Value'
+                        },
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
